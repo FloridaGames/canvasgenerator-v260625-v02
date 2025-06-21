@@ -1,49 +1,46 @@
 
+import JSZip from 'jszip';
 import { CourseData } from '@/components/CourseCreator';
 
 export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
-  // Create the IMSCC structure
-  const files: Record<string, string> = {};
+  const zip = new JSZip();
   
   // Generate manifest file
   const manifest = generateManifest(courseData);
-  files['imsmanifest.xml'] = manifest;
+  zip.file('imsmanifest.xml', manifest);
   
   // Generate course settings
   const courseSettings = generateCourseSettings(courseData);
-  files['course_settings/course_settings.xml'] = courseSettings;
+  zip.file('course_settings/course_settings.xml', courseSettings);
   
   // Generate front page
   const frontPageHtml = generateCanvasPage(courseData.frontPage.title, courseData.frontPage.content);
-  files['web_content/front_page.html'] = frontPageHtml;
+  zip.file('web_resources/front_page.html', frontPageHtml);
   
   // Generate wiki pages
   courseData.pages.forEach((page, index) => {
     const pageHtml = generateCanvasPage(page.title, page.content);
-    files[`web_content/page_${index + 1}.html`] = pageHtml;
+    zip.file(`web_resources/page_${page.id}.html`, pageHtml);
   });
   
   // Generate module structure
   const moduleContent = generateModuleStructure(courseData);
-  files['course_settings/module_meta.xml'] = moduleContent;
+  zip.file('course_settings/module_meta.xml', moduleContent);
   
-  // Create a simple ZIP-like structure (for demo purposes)
-  // In a real implementation, you'd use a proper ZIP library like JSZip
-  const imsccContent = Object.entries(files)
-    .map(([path, content]) => `--- ${path} ---\n${content}\n`)
-    .join('\n\n');
+  // Generate wiki page metadata
+  const wikiMetadata = generateWikiMetadata(courseData);
+  zip.file('course_settings/wiki_content.xml', wikiMetadata);
   
-  // For demonstration, we'll create a text file
-  // In production, you'd want to use JSZip to create a proper .imscc file
-  const blob = new Blob([imsccContent], { type: 'application/zip' });
+  // Create the actual ZIP file
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
   
-  return blob;
+  return zipBlob;
 };
 
 const generateManifest = (courseData: CourseData): string => {
-  const pageResources = courseData.pages.map((page, index) => `
-    <resource identifier="page_${index + 1}" type="webcontent" href="web_content/page_${index + 1}.html">
-      <file href="web_content/page_${index + 1}.html"/>
+  const pageResources = courseData.pages.map((page) => `
+    <resource identifier="page_${page.id}" type="webcontent" href="web_resources/page_${page.id}.html">
+      <file href="web_resources/page_${page.id}.html"/>
       <metadata>
         <lom:lom xmlns:lom="http://ltsc.ieee.org/xsd/LOM">
           <lom:general>
@@ -59,6 +56,7 @@ const generateManifest = (courseData: CourseData): string => {
 <manifest identifier="course_${Date.now()}" 
           xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1"
           xmlns:lom="http://ltsc.ieee.org/xsd/LOM"
+          xmlns:lomimscc="http://ltsc.ieee.org/xsd/imsccv1p1/LOM"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1 http://www.imsglobal.org/xsd/imscc_v1p1.xsd">
   
@@ -85,8 +83,8 @@ const generateManifest = (courseData: CourseData): string => {
       </item>
       <item identifier="pages_module">
         <title>Course Pages</title>
-        ${courseData.pages.map((page, index) => `
-        <item identifier="page_${index + 1}" identifierref="page_${index + 1}">
+        ${courseData.pages.map((page) => `
+        <item identifier="page_${page.id}" identifierref="page_${page.id}">
           <title>${escapeXml(page.title)}</title>
         </item>`).join('')}
       </item>
@@ -94,12 +92,15 @@ const generateManifest = (courseData: CourseData): string => {
   </organizations>
 
   <resources>
-    <resource identifier="front_page_resource" type="webcontent" href="web_content/front_page.html">
-      <file href="web_content/front_page.html"/>
+    <resource identifier="front_page_resource" type="webcontent" href="web_resources/front_page.html">
+      <file href="web_resources/front_page.html"/>
     </resource>
     ${pageResources}
     <resource identifier="course_settings" type="course_settings" href="course_settings/course_settings.xml">
       <file href="course_settings/course_settings.xml"/>
+    </resource>
+    <resource identifier="wiki_content" type="course_settings" href="course_settings/wiki_content.xml">
+      <file href="course_settings/wiki_content.xml"/>
     </resource>
   </resources>
 </manifest>`;
@@ -122,9 +123,37 @@ const generateCourseSettings = (courseData: CourseData): string => {
   <default_view>wiki</default_view>
   <wiki_has_front_page>true</wiki_has_front_page>
   
-  <canvas:course_home_sub_navigation_enabled>true</canvas:course_home_sub_navigation_enabled>
-  <canvas:course_home_view>wiki</canvas:course_home_view>
+  <canvas:course_home_sub_navigation_enabled xmlns:canvas="http://canvas.instructure.com/xsd/cccv1p0">true</canvas:course_home_sub_navigation_enabled>
+  <canvas:course_home_view xmlns:canvas="http://canvas.instructure.com/xsd/cccv1p0">wiki</canvas:course_home_view>
 </course>`;
+};
+
+const generateWikiMetadata = (courseData: CourseData): string => {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<wiki_content xmlns="http://canvas.instructure.com/xsd/cccv1p0"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://canvas.instructure.com/xsd/cccv1p0 http://canvas.instructure.com/xsd/cccv1p0.xsd">
+  
+  <pages>
+    <page identifier="front_page">
+      <title>${escapeXml(courseData.frontPage.title)}</title>
+      <body>${escapeXml(courseData.frontPage.content)}</body>
+      <editing_roles>teachers</editing_roles>
+      <notify_of_update>false</notify_of_update>
+      <published>${courseData.frontPage.content ? 'true' : 'false'}</published>
+      <front_page>true</front_page>
+    </page>
+    ${courseData.pages.map(page => `
+    <page identifier="page_${page.id}">
+      <title>${escapeXml(page.title)}</title>
+      <body>${escapeXml(page.content)}</body>
+      <editing_roles>teachers</editing_roles>
+      <notify_of_update>false</notify_of_update>
+      <published>${page.isPublished ? 'true' : 'false'}</published>
+      <front_page>false</front_page>
+    </page>`).join('')}
+  </pages>
+</wiki_content>`;
 };
 
 const generateCanvasPage = (title: string, content: string): string => {
@@ -133,6 +162,7 @@ const generateCanvasPage = (title: string, content: string): string => {
 <head>
     <meta charset="UTF-8">
     <title>${escapeXml(title)}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -141,26 +171,43 @@ const generateCanvasPage = (title: string, content: string): string => {
             max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
+            background: #fff;
         }
         h1, h2, h3, h4, h5, h6 {
             color: #2D3B45;
             margin-top: 1.5em;
             margin-bottom: 0.5em;
         }
-        h1 { font-size: 2em; border-bottom: 2px solid #394B59; padding-bottom: 10px; }
-        h2 { font-size: 1.5em; color: #2980B9; }
-        h3 { font-size: 1.3em; }
-        a { color: #2980B9; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        .course-welcome { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .course-info, .course-navigation, .getting-started {
-            background: #f7fafc;
+        h1 { 
+            font-size: 2em; 
+            border-bottom: 2px solid #394B59; 
+            padding-bottom: 10px; 
+        }
+        h2 { 
+            font-size: 1.5em; 
+            color: #2980B9; 
+        }
+        h3 { 
+            font-size: 1.3em; 
+        }
+        a { 
+            color: #2980B9; 
+            text-decoration: none; 
+        }
+        a:hover { 
+            text-decoration: underline; 
+        }
+        .course-welcome, .course-info, .course-navigation, .getting-started {
+            background: #f8f9fa;
             padding: 20px;
             margin: 20px 0;
             border-radius: 8px;
             border-left: 4px solid #3182ce;
         }
-        .page-list { list-style-type: none; padding: 0; }
+        .page-list { 
+            list-style-type: none; 
+            padding: 0; 
+        }
         .page-list li {
             margin: 10px 0;
             padding: 8px 12px;
@@ -173,11 +220,22 @@ const generateCanvasPage = (title: string, content: string): string => {
             text-decoration: none;
             font-weight: 500;
         }
-        .page-list a:hover { text-decoration: underline; }
+        .page-list a:hover { 
+            text-decoration: underline; 
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        .canvas-content {
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body>
-    ${content}
+    <div class="canvas-content">
+        ${content}
+    </div>
 </body>
 </html>`;
 };
@@ -192,14 +250,16 @@ const generateModuleStructure = (courseData: CourseData): string => {
     <title>Course Content</title>
     <position>1</position>
     <require_sequential_progress>false</require_sequential_progress>
+    <publish_final_grade>false</publish_final_grade>
     
     <items>
       ${courseData.pages.map((page, index) => `
-      <item identifier="page_item_${index + 1}">
+      <item identifier="page_item_${page.id}">
         <title>${escapeXml(page.title)}</title>
         <position>${index + 1}</position>
         <content_type>WikiPage</content_type>
-        <identifierref>page_${index + 1}</identifierref>
+        <identifierref>page_${page.id}</identifierref>
+        <published>${page.isPublished ? 'true' : 'false'}</published>
       </item>`).join('')}
     </items>
   </module>
@@ -207,6 +267,7 @@ const generateModuleStructure = (courseData: CourseData): string => {
 };
 
 const escapeXml = (str: string): string => {
+  if (!str) return '';
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

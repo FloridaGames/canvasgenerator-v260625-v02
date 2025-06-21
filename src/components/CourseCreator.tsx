@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,13 @@ export interface WikiPage {
   isPublished: boolean;
 }
 
+export interface UploadedDocument {
+  id: string;
+  name: string;
+  file: File;
+  url: string;
+}
+
 export interface CourseData {
   title: string;
   description: string;
@@ -29,6 +35,7 @@ export interface CourseData {
     welcomeMessage: string;
   };
   pages: WikiPage[];
+  documents: UploadedDocument[];
 }
 
 const steps = [
@@ -52,7 +59,8 @@ export const CourseCreator = () => {
       content: '',
       welcomeMessage: 'Welcome to our learning journey!'
     },
-    pages: []
+    pages: [],
+    documents: []
   });
 
   const updateCourseData = (updates: Partial<CourseData>) => {
