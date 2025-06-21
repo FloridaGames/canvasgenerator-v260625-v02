@@ -56,6 +56,20 @@ export const PageManager: React.FC<PageManagerProps> = ({
     });
   };
 
+  const addPageFromConverter = (title: string, content: string) => {
+    const newPage: WikiPage = {
+      id: Date.now().toString(),
+      title,
+      content,
+      order: courseData.pages.length + 1,
+      isPublished: true
+    };
+
+    updateCourseData({
+      pages: [...courseData.pages, newPage]
+    });
+  };
+
   const handleDocumentUpload = (document: UploadedDocument) => {
     updateCourseData({
       documents: [...courseData.documents, document]
@@ -136,7 +150,7 @@ export const PageManager: React.FC<PageManagerProps> = ({
         </TabsContent>
 
         <TabsContent value="converter" className="space-y-6">
-          <DocumentConverter />
+          <DocumentConverter onCreatePage={addPageFromConverter} />
         </TabsContent>
       </Tabs>
     </div>
