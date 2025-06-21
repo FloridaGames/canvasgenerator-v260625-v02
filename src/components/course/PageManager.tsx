@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseData, WikiPage, UploadedDocument } from '../CourseCreator';
 import { DocumentUpload } from './DocumentUpload';
+import { DocumentConverter } from './DocumentConverter';
 import { ChevronUp, ChevronDown, FileText } from 'lucide-react';
 
 interface PageManagerProps {
@@ -112,9 +113,10 @@ export const PageManager: React.FC<PageManagerProps> = ({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="pages" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pages">Wiki Pages</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="converter">Document Converter</TabsTrigger>
         </TabsList>
         
         <TabsContent value="pages" className="space-y-6">
@@ -300,6 +302,10 @@ export const PageManager: React.FC<PageManagerProps> = ({
             uploadedDocuments={courseData.documents}
             onDocumentRemove={handleDocumentRemove}
           />
+        </TabsContent>
+
+        <TabsContent value="converter" className="space-y-6">
+          <DocumentConverter />
         </TabsContent>
       </Tabs>
     </div>
