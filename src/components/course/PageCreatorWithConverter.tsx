@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Plus } from 'lucide-react';
 import { DocumentConverter } from './DocumentConverter';
+import { LayoutOptions, LayoutOptionsData } from './LayoutOptions';
+import { generateCanvasHTML } from '@/utils/canvasLayoutGenerator';
 
 interface PageCreatorWithConverterProps {
-  onAddPage: (title: string) => void;
+  onAddPage: (title: string, content?: string) => void;
   onAddPageFromConverter: (title: string, content: string) => void;
 }
 
@@ -18,10 +20,21 @@ export const PageCreatorWithConverter: React.FC<PageCreatorWithConverterProps> =
   onAddPageFromConverter
 }) => {
   const [newPageTitle, setNewPageTitle] = useState('');
+  const [layoutOptions, setLayoutOptions] = useState<LayoutOptionsData>({
+    contentWidth: '100%',
+    contentAlignment: 'center',
+    columns: 1,
+    columnWidths: [12],
+    textAlign: 'left'
+  });
 
   const handleAddBlankPage = () => {
     if (!newPageTitle.trim()) return;
-    onAddPage(newPageTitle);
+    
+    const defaultContent = `<h1>${newPageTitle}</h1>\n<p>Add your content here...</p>`;
+    const formattedContent = generateCanvasHTML(defaultContent, layoutOptions);
+    
+    onAddPage(newPageTitle, formattedContent);
     setNewPageTitle('');
   };
 
@@ -43,7 +56,7 @@ export const PageCreatorWithConverter: React.FC<PageCreatorWithConverterProps> =
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="blank" className="mt-4">
+          <TabsContent value="blank" className="mt-4 space-y-4">
             <div className="flex gap-4">
               <div className="flex-1">
                 <Label htmlFor="pageTitle" className="text-sm font-medium text-gray-700">
@@ -67,6 +80,23 @@ export const PageCreatorWithConverter: React.FC<PageCreatorWithConverterProps> =
                 </Button>
               </div>
             </div>
+            
+            <LayoutOptions 
+              layoutOptions={layoutOptions}
+              setLayoutOptions={setLayoutOptions}
+            />
+            
+            {newPageTitle && (
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="text-sm text-gray-600 mb-2">Preview:</div>
+                <div 
+                  className="bg-white p-4 rounded border min-h-32"
+                  dangerouslySetInnerHTML={{ 
+                    __html: generateCanvasHTML(`<h1>${newPageTitle}</h1>\n<p>Add your content here...</p>`, layoutOptions) 
+                  }} 
+                />
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="document" className="mt-4">

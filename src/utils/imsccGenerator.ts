@@ -38,23 +38,6 @@ export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
 };
 
 const generateManifest = (courseData: CourseData): string => {
-  const pageResources = courseData.pages.map((page) => {
-    const sanitizedTitle = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    return `
-    <resource identifier="wiki_content_${page.id}" type="webcontent" href="wiki_content/${sanitizedTitle}.html">
-      <file href="wiki_content/${sanitizedTitle}.html"/>
-      <metadata>
-        <lom:lom xmlns:lom="http://ltsc.ieee.org/xsd/LOM">
-          <lom:general>
-            <lom:title>
-              <lom:string language="en">${escapeXml(page.title)}</lom:string>
-            </lom:title>
-          </lom:general>
-        </lom:lom>
-      </metadata>
-    </resource>`;
-  }).join('');
-
   return `<?xml version="1.0" encoding="UTF-8"?>
 <manifest identifier="course_export_${Date.now()}" 
           xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1"
@@ -81,13 +64,13 @@ const generateManifest = (courseData: CourseData): string => {
   <organizations default="org_1">
     <organization identifier="org_1" structure="rooted-hierarchy">
       <title>${escapeXml(courseData.title)}</title>
-      <item identifier="front_page_item" identifierref="front_page_resource">
+      <item identifier="front_page_item">
         <title>Course Home</title>
       </item>
       <item identifier="pages_module" structure="rooted-hierarchy">
         <title>Wiki Pages</title>
         ${courseData.pages.map((page) => `
-        <item identifier="wiki_item_${page.id}" identifierref="wiki_content_${page.id}">
+        <item identifier="wiki_item_${page.id}">
           <title>${escapeXml(page.title)}</title>
         </item>`).join('')}
       </item>
@@ -95,10 +78,6 @@ const generateManifest = (courseData: CourseData): string => {
   </organizations>
 
   <resources>
-    <resource identifier="front_page_resource" type="webcontent" href="wiki_content/front-page.html">
-      <file href="wiki_content/front-page.html"/>
-    </resource>
-    ${pageResources}
     <resource identifier="course_settings_resource" type="course_settings" href="course_settings/course_settings.xml">
       <file href="course_settings/course_settings.xml"/>
     </resource>
@@ -373,7 +352,7 @@ const generateModuleStructure = (courseData: CourseData): string => {
         <title>${escapeXml(page.title)}</title>
         <position>${index + 1}</position>
         <content_type>WikiPage</content_type>
-        <identifierref>wiki_content_${page.id}</identifierref>
+        <identifierref>wiki_page_${page.id}</identifierref>
         <published>${page.isPublished ? 'true' : 'false'}</published>
         <workflow_state>${page.isPublished ? 'active' : 'unpublished'}</workflow_state>
       </item>`).join('')}

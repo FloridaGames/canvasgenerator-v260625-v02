@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseData, WikiPage, UploadedDocument } from '../CourseCreator';
@@ -17,11 +16,13 @@ export const PageManager: React.FC<PageManagerProps> = ({
   courseData,
   updateCourseData
 }) => {
-  const addPage = (title: string) => {
+  const addPage = (title: string, content?: string) => {
+    const defaultContent = content || `<h1>${title}</h1>\n<p>Add your content here...</p>`;
+    
     const newPage: WikiPage = {
       id: Date.now().toString(),
       title,
-      content: `<h1>${title}</h1>\n<p>Add your content here...</p>`,
+      content: defaultContent,
       order: courseData.pages.length + 1,
       isPublished: true
     };
