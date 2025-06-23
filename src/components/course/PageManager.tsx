@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseData, WikiPage, UploadedDocument } from '../CourseCreator';
 import { DocumentUpload } from './DocumentUpload';
 import { DocumentConverter } from './DocumentConverter';
-import { AddNewPageForm } from './AddNewPageForm';
+import { PageCreatorWithConverter } from './PageCreatorWithConverter';
 import { CreatePagesFromDocuments } from './CreatePagesFromDocuments';
 import { PagesList } from './PagesList';
 
@@ -125,7 +125,10 @@ export const PageManager: React.FC<PageManagerProps> = ({
         </TabsList>
         
         <TabsContent value="pages" className="space-y-6">
-          <AddNewPageForm onAddPage={addPage} />
+          <PageCreatorWithConverter 
+            onAddPage={addPage}
+            onAddPageFromConverter={addPageFromConverter}
+          />
           
           <CreatePagesFromDocuments
             documents={courseData.documents}

@@ -22,9 +22,13 @@ interface LayoutOptions {
 
 interface DocumentConverterProps {
   onCreatePage?: (title: string, content: string) => void;
+  isEmbedded?: boolean;
 }
 
-export const DocumentConverter: React.FC<DocumentConverterProps> = ({ onCreatePage }) => {
+export const DocumentConverter: React.FC<DocumentConverterProps> = ({ 
+  onCreatePage, 
+  isEmbedded = false 
+}) => {
   const [convertedContent, setConvertedContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
   const [isConverting, setIsConverting] = useState(false);
@@ -178,6 +182,72 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({ onCreatePa
     }
   };
 
+  if (isEmbedded) {
+    return (
+      <div className="space-y-4">
+        {/* Simplified Upload Section */}
+        <div className="space-y-4">
+          <Button 
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            disabled={isConverting}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            {isConverting ? 'Converting...' : 'Upload Document'}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx,.pdf"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          {fileName && (
+            <div className="flex items-center text-sm text-gray-600">
+              <FileText className="w-4 h-4 mr-2" />
+              {fileName}
+            </div>
+          )}
+        </div>
+
+        {/* Page Creation Section */}
+        {convertedContent && onCreatePage && (
+          <div className="space-y-4 border-t pt-4">
+            <div>
+              <Label htmlFor="embeddedPageTitle" className="text-sm font-medium">
+                Page Title
+              </Label>
+              <Input
+                id="embeddedPageTitle"
+                value={pageTitle}
+                onChange={(e) => setPageTitle(e.target.value)}
+                placeholder="Enter page title..."
+                className="mt-1"
+              />
+            </div>
+            <Button 
+              onClick={handleCreatePage}
+              disabled={!pageTitle.trim() || !convertedContent}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Page from Document
+            </Button>
+          </div>
+        )}
+
+        {/* Simple Preview */}
+        {convertedContent && (
+          <div className="border rounded-lg p-4 bg-white max-h-60 overflow-y-auto">
+            <div className="text-sm text-gray-600 mb-2">Preview:</div>
+            <div dangerouslySetInnerHTML={{ __html: generateCanvasHTML() }} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full converter interface for standalone use
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-screen">
       {/* Left Panel - Controls */}
