@@ -1,12 +1,13 @@
-import React, { useState, useRef } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileText, Download, Plus } from 'lucide-react';
-import mammoth from 'mammoth';
 import { LayoutOptions, LayoutOptionsData } from './LayoutOptions';
 import { generateCanvasHTML } from '@/utils/canvasLayoutGenerator';
+import { DocumentUploadSection } from './document/DocumentUploadSection';
+import { PageCreationSection } from './document/PageCreationSection';
+import { DocumentPreview } from './document/DocumentPreview';
+import { DocumentDownloadSection } from './document/DocumentDownloadSection';
+import { convertDocument } from './document/utils';
 
 interface DocumentConverterProps {
   onCreatePage?: (title: string, content: string) => void;
@@ -28,8 +29,6 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
     columnWidths: [12],
     textAlign: 'left'
   });
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -40,21 +39,8 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
     setPageTitle(file.name.replace(/\.[^/.]+$/, "")); // Set default page title
 
     try {
-      if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({ arrayBuffer });
-        setConvertedContent(result.value);
-      } else if (file.type === 'application/pdf') {
-        // For PDF files, we'll show a placeholder message
-        setConvertedContent(`
-          <h2>PDF Document: ${file.name}</h2>
-          <p>PDF conversion requires additional server-side processing. This is a placeholder for the converted content.</p>
-          <p>In a real implementation, you would use a PDF-to-HTML conversion service.</p>
-          <h3>Sample Content</h3>
-          <p>This is sample content that demonstrates how your PDF content would appear after conversion. You can customize the layout using the options on the left.</p>
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-        `);
-      }
+      const content = await convertDocument(file);
+      setConvertedContent(content);
     } catch (error) {
       console.error('Error converting document:', error);
       setConvertedContent('<p>Error converting document. Please try again.</p>');
@@ -79,7 +65,6 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
   const handleCreatePage = () => {
     if (onCreatePage && convertedContent && pageTitle.trim()) {
       const canvasHTML = generateCanvasHTML(convertedContent, layoutOptions);
-      // Only create the page in memory, not save to file system
       onCreatePage(pageTitle, canvasHTML);
       
       // Reset form after creating page
@@ -91,35 +76,18 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
     }
   };
 
+  const finalContent = convertedContent ? generateCanvasHTML(convertedContent, layoutOptions) : '';
+
   if (isEmbedded) {
     return (
       <div className="space-y-4">
-        {/* Simplified Upload Section */}
-        <div className="space-y-4">
-          <Button 
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            disabled={isConverting}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            {isConverting ? 'Converting...' : 'Upload Document'}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".docx,.pdf"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          {fileName && (
-            <div className="flex items-center text-sm text-gray-600">
-              <FileText className="w-4 h-4 mr-2" />
-              {fileName}
-            </div>
-          )}
-        </div>
+        <DocumentUploadSection
+          onFileUpload={handleFileUpload}
+          fileName={fileName}
+          isConverting={isConverting}
+          isEmbedded={true}
+        />
 
-        {/* Layout Options */}
         {convertedContent && (
           <LayoutOptions 
             layoutOptions={layoutOptions}
@@ -127,39 +95,19 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
           />
         )}
 
-        {/* Page Creation Section */}
         {convertedContent && onCreatePage && (
           <div className="space-y-4 border-t pt-4">
-            <div>
-              <Label htmlFor="embeddedPageTitle" className="text-sm font-medium">
-                Page Title
-              </Label>
-              <Input
-                id="embeddedPageTitle"
-                value={pageTitle}
-                onChange={(e) => setPageTitle(e.target.value)}
-                placeholder="Enter page title..."
-                className="mt-1"
-              />
-            </div>
-            <Button 
-              onClick={handleCreatePage}
-              disabled={!pageTitle.trim() || !convertedContent}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Page from Document
-            </Button>
+            <PageCreationSection
+              pageTitle={pageTitle}
+              setPageTitle={setPageTitle}
+              onCreatePage={handleCreatePage}
+              hasContent={!!convertedContent}
+              isEmbedded={true}
+            />
           </div>
         )}
 
-        {/* Simple Preview */}
-        {convertedContent && (
-          <div className="border rounded-lg p-4 bg-white max-h-60 overflow-y-auto">
-            <div className="text-sm text-gray-600 mb-2">Preview:</div>
-            <div dangerouslySetInnerHTML={{ __html: generateCanvasHTML(convertedContent, layoutOptions) }} />
-          </div>
-        )}
+        <DocumentPreview content={finalContent} isEmbedded={true} />
       </div>
     );
   }
@@ -169,89 +117,44 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-screen">
       {/* Left Panel - Controls */}
       <div className="lg:col-span-1 space-y-6 overflow-y-auto">
-        {/* File Upload */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Document Upload</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <Button 
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={isConverting}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {isConverting ? 'Converting...' : 'Upload Document'}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".docx,.pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              {fileName && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <FileText className="w-4 h-4 mr-2" />
-                  {fileName}
-                </div>
-              )}
-            </div>
+            <DocumentUploadSection
+              onFileUpload={handleFileUpload}
+              fileName={fileName}
+              isConverting={isConverting}
+            />
           </CardContent>
         </Card>
 
-        {/* Create Page Section */}
         {convertedContent && onCreatePage && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Create Wiki Page</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="pageTitle" className="text-sm font-medium">
-                  Page Title
-                </Label>
-                <Input
-                  id="pageTitle"
-                  value={pageTitle}
-                  onChange={(e) => setPageTitle(e.target.value)}
-                  placeholder="Enter page title..."
-                  className="mt-1"
-                />
-              </div>
-              <Button 
-                onClick={handleCreatePage}
-                disabled={!pageTitle.trim() || !convertedContent}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Page from Converted Content
-              </Button>
+            <CardContent>
+              <PageCreationSection
+                pageTitle={pageTitle}
+                setPageTitle={setPageTitle}
+                onCreatePage={handleCreatePage}
+                hasContent={!!convertedContent}
+              />
             </CardContent>
           </Card>
         )}
 
-        {/* Layout Options */}
         <LayoutOptions 
           layoutOptions={layoutOptions}
           setLayoutOptions={setLayoutOptions}
         />
 
-        {/* Download Button */}
-        {convertedContent && (
-          <Card>
-            <CardContent className="pt-6">
-              <Button 
-                onClick={downloadHTML}
-                className="w-full bg-purple-600 hover:bg-purple-700"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Canvas HTML
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <DocumentDownloadSection
+          onDownload={downloadHTML}
+          hasContent={!!convertedContent}
+        />
       </div>
 
       {/* Right Panel - Preview */}
@@ -260,17 +163,10 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
           <h3 className="font-medium">Canvas LMS Preview</h3>
         </div>
         <div 
-          className="p-4 overflow-y-auto"
+          className="overflow-y-auto"
           style={{ minHeight: '600px', minWidth: '800px' }}
         >
-          {convertedContent ? (
-            <div dangerouslySetInnerHTML={{ __html: generateCanvasHTML(convertedContent, layoutOptions) }} />
-          ) : (
-            <div className="text-center text-gray-500 py-20">
-              <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p>Upload a document to see the preview</p>
-            </div>
-          )}
+          <DocumentPreview content={finalContent} />
         </div>
       </div>
     </div>
