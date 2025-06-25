@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { CourseData } from '@/components/CourseCreator';
+import { generateCanvasWikiPageHTML, generateCanvasIdentifier } from './wikiPageGenerator';
 
 export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
   const zip = new JSZip();
@@ -16,9 +17,9 @@ export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
   const frontPageHtml = generateCanvasPageHTML(courseData.frontPage.title, courseData.frontPage.content);
   zip.file('wiki_content/front-page.html', frontPageHtml);
   
-  // Generate wiki pages HTML in wiki_content folder
+  // Generate individual wiki pages HTML using the new generator
   courseData.pages.forEach((page, index) => {
-    const pageHtml = generateCanvasPageHTML(page.title, page.content);
+    const pageHtml = generateCanvasWikiPageHTML(page);
     const sanitizedTitle = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     zip.file(`wiki_content/${sanitizedTitle}.html`, pageHtml);
   });
@@ -70,7 +71,7 @@ const generateManifest = (courseData: CourseData): string => {
       <item identifier="pages_module" structure="rooted-hierarchy">
         <title>Wiki Pages</title>
         ${courseData.pages.map((page) => `
-        <item identifier="wiki_item_${page.id}">
+        <item identifier="wiki_item_${generateCanvasIdentifier(page.id, page.title)}">
           <title>${escapeXml(page.title)}</title>
         </item>`).join('')}
       </item>
@@ -132,8 +133,9 @@ const generateWikiMetadata = (courseData: CourseData): string => {
     </page>
     ${courseData.pages.map(page => {
       const sanitizedTitle = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const identifier = generateCanvasIdentifier(page.id, page.title);
       return `
-    <page identifier="wiki_page_${page.id}">
+    <page identifier="${identifier}">
       <title>${escapeXml(page.title)}</title>
       <url>${sanitizedTitle}</url>
       <body>${escapeXml(page.content)}</body>
@@ -347,15 +349,18 @@ const generateModuleStructure = (courseData: CourseData): string => {
     <workflow_state>active</workflow_state>
     
     <items>
-      ${courseData.pages.map((page, index) => `
-      <item identifier="module_item_${page.id}">
+      ${courseData.pages.map((page, index) => {
+        const identifier = generateCanvasIdentifier(page.id, page.title);
+        return `
+      <item identifier="module_item_${identifier}">
         <title>${escapeXml(page.title)}</title>
         <position>${index + 1}</position>
         <content_type>WikiPage</content_type>
-        <identifierref>wiki_page_${page.id}</identifierref>
+        <identifierref>${identifier}</identifierref>
         <published>${page.isPublished ? 'true' : 'false'}</published>
         <workflow_state>${page.isPublished ? 'active' : 'unpublished'}</workflow_state>
-      </item>`).join('')}
+      </item>`;
+      }).join('')}
     </items>
   </module>
 </modules>`;
