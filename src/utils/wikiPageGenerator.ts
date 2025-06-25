@@ -1,3 +1,4 @@
+
 import { WikiPage } from '@/components/CourseCreator';
 
 export const generateCanvasWikiPageHTML = (page: WikiPage): string => {
@@ -70,30 +71,5 @@ const escapeHtml = (text: string): string => {
     .replace(/'/g, '&#x27;');
 };
 
-export const downloadWikiPageHTML = (page: WikiPage): void => {
-  const html = generateCanvasWikiPageHTML(page);
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${sanitizeFileName(page.title)}.html`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
-export const downloadAllWikiPagesHTML = (pages: WikiPage[]): void => {
-  pages.forEach(page => {
-    setTimeout(() => downloadWikiPageHTML(page), 100); // Small delay between downloads
-  });
-};
-
-const sanitizeFileName = (fileName: string): string => {
-  return fileName
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/^-+|-+$/g, '');
-};
+// Note: Download functions removed to prevent file system writes
+// HTML content is now only generated for inclusion in IMSCC packages
