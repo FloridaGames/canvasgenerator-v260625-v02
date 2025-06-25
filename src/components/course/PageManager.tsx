@@ -2,8 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseData, WikiPage, UploadedDocument } from '../CourseCreator';
 import { DocumentUpload } from './DocumentUpload';
-import { DocumentConverter } from './DocumentConverter';
-import { PageCreatorWithConverter } from './PageCreatorWithConverter';
+import { PageCreationWizard } from './PageCreationWizard';
 import { CreatePagesFromDocuments } from './CreatePagesFromDocuments';
 import { PagesList } from './PagesList';
 
@@ -35,7 +34,7 @@ export const PageManager: React.FC<PageManagerProps> = ({
   const addPageFromDocument = (document: UploadedDocument) => {
     const newPage: WikiPage = {
       id: Date.now().toString(),
-      title: document.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+      title: document.name.replace(/\.[^/.]+$/, ""),
       content: `<h1>${document.name.replace(/\.[^/.]+$/, "")}</h1>
 <div class="document-content">
   <p><strong>Document:</strong> ${document.name}</p>
@@ -118,15 +117,15 @@ export const PageManager: React.FC<PageManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="pages" className="w-full">
+      <Tabs defaultValue="create" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pages">Wiki Pages</TabsTrigger>
+          <TabsTrigger value="create">Create Pages</TabsTrigger>
+          <TabsTrigger value="manage">Manage Pages</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="converter">Document Converter</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="pages" className="space-y-6">
-          <PageCreatorWithConverter 
+        <TabsContent value="create" className="space-y-6">
+          <PageCreationWizard 
             onAddPage={addPage}
             onAddPageFromConverter={addPageFromConverter}
           />
@@ -135,7 +134,9 @@ export const PageManager: React.FC<PageManagerProps> = ({
             documents={courseData.documents}
             onCreatePageFromDocument={addPageFromDocument}
           />
-
+        </TabsContent>
+        
+        <TabsContent value="manage" className="space-y-6">
           <PagesList
             pages={courseData.pages}
             onUpdatePage={updatePage}
@@ -151,10 +152,6 @@ export const PageManager: React.FC<PageManagerProps> = ({
             uploadedDocuments={courseData.documents}
             onDocumentRemove={handleDocumentRemove}
           />
-        </TabsContent>
-
-        <TabsContent value="converter" className="space-y-6">
-          <DocumentConverter onCreatePage={addPageFromConverter} />
         </TabsContent>
       </Tabs>
     </div>

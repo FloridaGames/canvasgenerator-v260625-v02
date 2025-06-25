@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { CourseMetadata } from './course/CourseMetadata';
 import { PageManager } from './course/PageManager';
-import { FrontPageDesigner } from './course/FrontPageDesigner';
+import { FrontPageWizard } from './course/FrontPageWizard';
 import { IMSCCExporter } from './course/IMSCCExporter';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 export interface WikiPage {
   id: string;
@@ -99,7 +99,7 @@ export const CourseCreator = () => {
       case 'pages':
         return <PageManager courseData={courseData} updateCourseData={updateCourseData} />;
       case 'frontpage':
-        return <FrontPageDesigner courseData={courseData} updateCourseData={updateCourseData} />;
+        return <FrontPageWizard courseData={courseData} updateCourseData={updateCourseData} />;
       case 'export':
         return <IMSCCExporter courseData={courseData} />;
       default:
