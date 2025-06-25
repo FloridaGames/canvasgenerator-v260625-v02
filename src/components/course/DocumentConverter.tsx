@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +79,7 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
   const handleCreatePage = () => {
     if (onCreatePage && convertedContent && pageTitle.trim()) {
       const canvasHTML = generateCanvasHTML(convertedContent, layoutOptions);
+      // Only create the page in memory, not save to file system
       onCreatePage(pageTitle, canvasHTML);
       
       // Reset form after creating page
@@ -87,8 +87,7 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
       setFileName('');
       setPageTitle('');
       
-      // Show success message or navigate to pages tab
-      console.log('Page created successfully!');
+      console.log('Page created successfully in memory - no file system writes!');
     }
   };
 

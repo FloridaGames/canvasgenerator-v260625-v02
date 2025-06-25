@@ -24,6 +24,7 @@ export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
   zip.file('wiki_content/front-page.html', frontPageHtml);
   
   // Generate individual wiki pages HTML using the new generator
+  // These files only exist within the ZIP structure, not in the physical file system
   courseData.pages.forEach((page, index) => {
     const pageHtml = generateCanvasWikiPageHTML(page);
     const sanitizedTitle = sanitizeFileName(page.title);
