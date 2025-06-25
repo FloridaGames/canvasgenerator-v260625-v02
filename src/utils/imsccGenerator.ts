@@ -67,13 +67,18 @@ const generateManifest = (courseData: CourseData): string => {
       <title>${escapeXml(courseData.title)}</title>
       <item identifier="front_page_item">
         <title>Course Home</title>
+        <identifierref>front_page_resource</identifierref>
       </item>
       <item identifier="pages_module" structure="rooted-hierarchy">
         <title>Wiki Pages</title>
-        ${courseData.pages.map((page) => `
-        <item identifier="wiki_item_${generateCanvasIdentifier(page.id, page.title)}">
+        ${courseData.pages.map((page) => {
+          const identifier = generateCanvasIdentifier(page.id, page.title);
+          return `
+        <item identifier="wiki_item_${identifier}">
           <title>${escapeXml(page.title)}</title>
-        </item>`).join('')}
+          <identifierref>${identifier}</identifierref>
+        </item>`;
+        }).join('')}
       </item>
     </organization>
   </organizations>
@@ -88,6 +93,17 @@ const generateManifest = (courseData: CourseData): string => {
     <resource identifier="module_meta_resource" type="course_settings" href="course_settings/module_meta.xml">
       <file href="course_settings/module_meta.xml"/>
     </resource>
+    <resource identifier="front_page_resource" type="webcontent" href="wiki_content/front-page.html">
+      <file href="wiki_content/front-page.html"/>
+    </resource>
+    ${courseData.pages.map((page) => {
+      const identifier = generateCanvasIdentifier(page.id, page.title);
+      const sanitizedTitle = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      return `
+    <resource identifier="${identifier}" type="webcontent" href="wiki_content/${sanitizedTitle}.html">
+      <file href="wiki_content/${sanitizedTitle}.html"/>
+    </resource>`;
+    }).join('')}
   </resources>
 </manifest>`;
 };
