@@ -1,39 +1,58 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { WikiPage } from '../CourseCreator';
 
 interface PageItemProps {
   page: WikiPage;
   index: number;
-  isFirst: boolean;
-  isLast: boolean;
-  isEditing: boolean;
-  onEdit: () => void;
-  onUpdate: (updates: Partial<WikiPage>) => void;
-  onDelete: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
+  totalPages: number;
+  onUpdate: (pageId: string, updates: Partial<WikiPage>) => void;
+  onDelete: (pageId: string) => void;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
 }
 
 export const PageItem: React.FC<PageItemProps> = ({
   page,
   index,
-  isFirst,
-  isLast,
-  isEditing,
-  onEdit,
+  totalPages,
   onUpdate,
   onDelete,
   onMoveUp,
   onMoveDown
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleEdit = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleUpdate = (updates: Partial<WikiPage>) => {
+    onUpdate(page.id, updates);
+  };
+
+  const handleDelete = () => {
+    onDelete(page.id);
+  };
+
+  const handleMoveUp = () => {
+    onMoveUp(index);
+  };
+
+  const handleMoveDown = () => {
+    onMoveDown(index);
+  };
+
+  const isFirst = index === 0;
+  const isLast = index === totalPages - 1;
+
   return (
     <Card className="border-l-4 border-l-blue-500">
       <CardHeader className="pb-3">
@@ -45,7 +64,7 @@ export const PageItem: React.FC<PageItemProps> = ({
             {isEditing ? (
               <Input
                 value={page.title}
-                onChange={(e) => onUpdate({ title: e.target.value })}
+                onChange={(e) => handleUpdate({ title: e.target.value })}
                 className="text-lg font-semibold"
               />
             ) : (
@@ -63,7 +82,7 @@ export const PageItem: React.FC<PageItemProps> = ({
               <Switch
                 id={`published-${page.id}`}
                 checked={page.isPublished}
-                onCheckedChange={(checked) => onUpdate({ isPublished: checked })}
+                onCheckedChange={(checked) => handleUpdate({ isPublished: checked })}
               />
             </div>
             
@@ -71,7 +90,7 @@ export const PageItem: React.FC<PageItemProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onMoveUp}
+                onClick={handleMoveUp}
                 disabled={isFirst}
               >
                 <ChevronUp className="w-4 h-4" />
@@ -79,7 +98,7 @@ export const PageItem: React.FC<PageItemProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onMoveDown}
+                onClick={handleMoveDown}
                 disabled={isLast}
               >
                 <ChevronDown className="w-4 h-4" />
@@ -89,16 +108,18 @@ export const PageItem: React.FC<PageItemProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={onEdit}
+              onClick={handleEdit}
             >
+              <Edit className="w-4 h-4" />
               {isEditing ? 'Save' : 'Edit'}
             </Button>
             
             <Button
               variant="destructive"
               size="sm"
-              onClick={onDelete}
+              onClick={handleDelete}
             >
+              <Trash2 className="w-4 h-4" />
               Delete
             </Button>
           </div>
@@ -114,7 +135,7 @@ export const PageItem: React.FC<PageItemProps> = ({
               </Label>
               <Textarea
                 value={page.content}
-                onChange={(e) => onUpdate({ content: e.target.value })}
+                onChange={(e) => handleUpdate({ content: e.target.value })}
                 rows={8}
                 className="mt-1 font-mono text-sm"
                 placeholder="Enter your HTML content here..."
