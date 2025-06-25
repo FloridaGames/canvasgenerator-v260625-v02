@@ -1,11 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WikiPage } from '../CourseCreator';
 import { PageItem } from './PageItem';
-import { Download, FileDown } from 'lucide-react';
-import { downloadWikiPageHTML, downloadAllWikiPagesHTML } from '@/utils/wikiPageGenerator';
 
 interface PagesListProps {
   pages: WikiPage[];
@@ -22,19 +20,6 @@ export const PagesList: React.FC<PagesListProps> = ({
   onMovePageUp,
   onMovePageDown
 }) => {
-  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-
-  const handleDownloadAll = async () => {
-    setIsDownloadingAll(true);
-    try {
-      downloadAllWikiPagesHTML(pages);
-    } catch (error) {
-      console.error('Error downloading pages:', error);
-    } finally {
-      setTimeout(() => setIsDownloadingAll(false), 1000);
-    }
-  };
-
   if (pages.length === 0) {
     return (
       <Card>
@@ -50,17 +35,8 @@ export const PagesList: React.FC<PagesListProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Wiki Pages ({pages.length})</CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadAll}
-              disabled={isDownloadingAll || pages.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              {isDownloadingAll ? 'Downloading...' : 'Download All HTML'}
-            </Button>
+          <div className="text-sm text-gray-600">
+            Pages will be included in the IMSCC export
           </div>
         </div>
       </CardHeader>
@@ -78,15 +54,6 @@ export const PagesList: React.FC<PagesListProps> = ({
                     </span>
                   )}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => downloadWikiPageHTML(page)}
-                  className="flex items-center gap-2"
-                >
-                  <FileDown className="w-4 h-4" />
-                  Download HTML
-                </Button>
               </div>
               
               <PageItem
