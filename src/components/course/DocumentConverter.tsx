@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutOptions, LayoutOptionsData } from './LayoutOptions';
@@ -72,7 +71,7 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({
       setFileName('');
       setPageTitle('');
       
-      console.log('Page created successfully in memory - no file system writes!');
+      console.log('Page created successfully in memory - will be included in IMSCC wiki_content folder');
     }
   };
 
