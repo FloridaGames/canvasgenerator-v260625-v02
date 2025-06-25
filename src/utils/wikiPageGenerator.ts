@@ -1,4 +1,3 @@
-
 import { WikiPage } from '@/components/CourseCreator';
 
 export const generateCanvasWikiPageHTML = (page: WikiPage): string => {

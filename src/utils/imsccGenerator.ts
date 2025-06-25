@@ -13,8 +13,9 @@ export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
   const courseSettings = generateCourseSettings(courseData);
   zip.file('course_settings/course_settings.xml', courseSettings);
   
-  // Generate front page HTML in wiki_content folder
-  const frontPageHtml = generateCanvasPageHTML(courseData.frontPage.title, courseData.frontPage.content);
+  // Generate front page HTML with proper identifier
+  const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
+  const frontPageHtml = generateCanvasPageHTML(courseData.frontPage.title, courseData.frontPage.content, frontPageIdentifier);
   zip.file('wiki_content/front-page.html', frontPageHtml);
   
   // Generate individual wiki pages HTML using the new generator
@@ -39,6 +40,8 @@ export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
 };
 
 const generateManifest = (courseData: CourseData): string => {
+  const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
+  
   return `<?xml version="1.0" encoding="UTF-8"?>
 <manifest identifier="course_export_${Date.now()}" 
           xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1"
@@ -67,7 +70,7 @@ const generateManifest = (courseData: CourseData): string => {
       <title>${escapeXml(courseData.title)}</title>
       <item identifier="front_page_item">
         <title>Course Home</title>
-        <identifierref>front_page_resource</identifierref>
+        <identifierref>${frontPageIdentifier}</identifierref>
       </item>
       <item identifier="pages_module" structure="rooted-hierarchy">
         <title>Wiki Pages</title>
@@ -93,7 +96,7 @@ const generateManifest = (courseData: CourseData): string => {
     <resource identifier="module_meta_resource" type="course_settings" href="course_settings/module_meta.xml">
       <file href="course_settings/module_meta.xml"/>
     </resource>
-    <resource identifier="front_page_resource" type="webcontent" href="wiki_content/front-page.html">
+    <resource identifier="${frontPageIdentifier}" type="webcontent" href="wiki_content/front-page.html">
       <file href="wiki_content/front-page.html"/>
     </resource>
     ${courseData.pages.map((page) => {
@@ -131,13 +134,15 @@ const generateCourseSettings = (courseData: CourseData): string => {
 };
 
 const generateWikiMetadata = (courseData: CourseData): string => {
+  const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
+  
   return `<?xml version="1.0" encoding="UTF-8"?>
 <wiki_content xmlns="http://canvas.instructure.com/xsd/cccv1p0"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xsi:schemaLocation="http://canvas.instructure.com/xsd/cccv1p0 http://canvas.instructure.com/xsd/cccv1p0.xsd">
   
   <pages>
-    <page identifier="front_page">
+    <page identifier="${frontPageIdentifier}">
       <title>${escapeXml(courseData.frontPage.title)}</title>
       <url>front-page</url>
       <body>${escapeXml(courseData.frontPage.content)}</body>
@@ -166,7 +171,7 @@ const generateWikiMetadata = (courseData: CourseData): string => {
 </wiki_content>`;
 };
 
-const generateCanvasPageHTML = (title: string, content: string): string => {
+const generateCanvasPageHTML = (title: string, content: string, identifier?: string): string => {
   // Clean and format the content for Canvas
   const cleanContent = content
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
@@ -181,172 +186,16 @@ const generateCanvasPageHTML = (title: string, content: string): string => {
       return safeClasses.length > 0 ? `class="${safeClasses.join(' ')}"` : '';
     });
 
-  return `<!DOCTYPE html>
-<html>
+  return `<html>
 <head>
-    <meta charset="UTF-8">
-    <title>${escapeXml(title)}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #2D3B45;
-            margin: 0;
-            padding: 20px;
-            background: #ffffff;
-        }
-        .content-wrapper {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            color: #2D3B45;
-            margin-top: 1.5em;
-            margin-bottom: 0.75em;
-            font-weight: 600;
-        }
-        h1 { 
-            font-size: 2em; 
-            border-bottom: 2px solid #394B59; 
-            padding-bottom: 10px; 
-            margin-bottom: 1em;
-        }
-        h2 { 
-            font-size: 1.5em; 
-            color: #2980B9; 
-            margin-bottom: 0.75em;
-        }
-        h3 { 
-            font-size: 1.3em; 
-            margin-bottom: 0.5em;
-        }
-        p {
-            margin-bottom: 1em;
-            text-align: left;
-        }
-        a { 
-            color: #2980B9; 
-            text-decoration: none; 
-        }
-        a:hover { 
-            text-decoration: underline; 
-        }
-        .grid-row {
-            display: flex;
-            flex-wrap: wrap;
-            margin: -12px;
-        }
-        .col-xs-12 {
-            width: 100%;
-            padding: 12px;
-            box-sizing: border-box;
-        }
-        .col-md-1 { width: 8.333%; }
-        .col-md-2 { width: 16.666%; }
-        .col-md-3 { width: 25%; }
-        .col-md-4 { width: 33.333%; }
-        .col-md-5 { width: 41.666%; }
-        .col-md-6 { width: 50%; }
-        .col-md-7 { width: 58.333%; }
-        .col-md-8 { width: 66.666%; }
-        .col-md-9 { width: 75%; }
-        .col-md-10 { width: 83.333%; }
-        .col-md-11 { width: 91.666%; }
-        .col-md-12 { width: 100%; }
-        
-        @media (max-width: 768px) {
-            .grid-row > div {
-                width: 100% !important;
-            }
-        }
-        
-        .course-info, .course-navigation, .getting-started {
-            background: #f8f9fa;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-            border-left: 4px solid #3182ce;
-        }
-        
-        ul, ol {
-            margin-bottom: 1em;
-            padding-left: 2em;
-        }
-        
-        li {
-            margin-bottom: 0.5em;
-        }
-        
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #3182ce;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .btn:hover {
-            background: #2c5aa0;
-            text-decoration: none;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1em;
-        }
-        
-        th, td {
-            padding: 8px 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-        
-        blockquote {
-            margin: 1em 0;
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-left: 4px solid #3182ce;
-            font-style: italic;
-        }
-        
-        code {
-            background: #f1f3f4;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-        }
-        
-        pre {
-            background: #f1f3f4;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-            margin-bottom: 1em;
-        }
-    </style>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>${escapeXml(title)}</title>${identifier ? `
+<meta name="identifier" content="${identifier}"/>` : ''}
+<meta name="editing_roles" content="teachers"/>
+<meta name="workflow_state" content="active"/>
 </head>
 <body>
-    <div class="content-wrapper">
-        ${cleanContent}
-    </div>
+${cleanContent}
 </body>
 </html>`;
 };
