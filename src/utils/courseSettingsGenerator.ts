@@ -79,6 +79,8 @@ export const generateModuleStructure = (courseData: CourseData): string => {
     <items>
       ${courseData.pages.map((page, index) => {
         const identifier = generateCanvasIdentifier(page.id, page.title);
+        const resourceId = Math.floor(Math.random() * 1000000) + 100000; // Generate a random resource ID
+        
         return `
       <item identifier="module_item_${identifier}">
         <title>${escapeXml(page.title)}</title>
@@ -87,6 +89,15 @@ export const generateModuleStructure = (courseData: CourseData): string => {
         <identifierref>${identifier}</identifierref>
         <published>${page.isPublished ? 'true' : 'false'}</published>
         <workflow_state>${page.isPublished ? 'active' : 'unpublished'}</workflow_state>
+        
+        <wiki_page>
+          <div class="show-content user_content clearfix enhanced" data-resource-type="wiki_page.body" data-resource-id="${resourceId}" data-lti-page-content="true">
+            <h1 class="page-title">${escapeXml(page.title)}</h1>
+            ${page.content}
+            <div id="assign-to-mount-point"></div>
+            <div id="choose-editor-mount-point"></div>
+          </div>
+        </wiki_page>
       </item>`;
       }).join('')}
     </items>
