@@ -1,9 +1,8 @@
-
 import JSZip from 'jszip';
 import { CourseData } from '@/components/CourseCreator';
 import { generateCanvasWikiPageHTML, generateCanvasIdentifier } from './wikiPageGenerator';
 import { generateManifest } from './manifestGenerator';
-import { generateCourseSettings, generateWikiMetadata, generateModuleStructure } from './courseSettingsGenerator';
+import { generateCourseSettings, generateModuleStructure } from './courseSettingsGenerator';
 import { generateCanvasPageHTML } from './canvasPageGenerator';
 import { sanitizeFileName } from './xmlUtils';
 
@@ -54,10 +53,6 @@ export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
   // Generate module structure
   const moduleContent = generateModuleStructure(courseData);
   zip.file('course_settings/module_meta.xml', moduleContent);
-  
-  // Generate wiki page metadata
-  const wikiMetadata = generateWikiMetadata(courseData);
-  zip.file('course_settings/wiki_content.xml', wikiMetadata);
   
   // Create the actual ZIP file
   const zipBlob = await zip.generateAsync({ type: 'blob' });

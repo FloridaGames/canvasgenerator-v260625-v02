@@ -1,4 +1,3 @@
-
 import { CourseData } from '@/components/CourseCreator';
 import { generateCanvasIdentifier } from './wikiPageGenerator';
 import { escapeXml } from './xmlUtils';
@@ -23,56 +22,6 @@ export const generateCourseSettings = (courseData: CourseData): string => {
   <canvas:course_home_sub_navigation_enabled xmlns:canvas="http://canvas.instructure.com/xsd/cccv1p0">true</canvas:course_home_sub_navigation_enabled>
   <canvas:course_home_view xmlns:canvas="http://canvas.instructure.com/xsd/cccv1p0">wiki</canvas:course_home_view>
 </course>`;
-};
-
-export const generateWikiMetadata = (courseData: CourseData): string => {
-  const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
-  
-  // Combine regular pages with document-based pages
-  const allPages = [
-    ...courseData.pages,
-    ...courseData.documents.map(doc => ({
-      id: `doc_${doc.id}`,
-      title: doc.name.replace(/\.[^/.]+$/, ''),
-      content: generateDocumentPageContent(doc),
-      order: courseData.pages.length + 1,
-      isPublished: true
-    }))
-  ];
-  
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<wiki_content xmlns="http://canvas.instructure.com/xsd/cccv1p0"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://canvas.instructure.com/xsd/cccv1p0 http://canvas.instructure.com/xsd/cccv1p0.xsd">
-  
-  <pages>
-    <page identifier="${frontPageIdentifier}">
-      <title>${escapeXml(courseData.frontPage.title)}</title>
-      <url>front-page</url>
-      <body>${escapeXml(courseData.frontPage.content)}</body>
-      <editing_roles>teachers</editing_roles>
-      <notify_of_update>false</notify_of_update>
-      <published>${courseData.frontPage.content ? 'true' : 'false'}</published>
-      <front_page>true</front_page>
-      <workflow_state>active</workflow_state>
-    </page>
-    ${allPages.map(page => {
-      const sanitizedTitle = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      const identifier = generateCanvasIdentifier(page.id, page.title);
-      return `
-    <page identifier="${identifier}">
-      <title>${escapeXml(page.title)}</title>
-      <url>${sanitizedTitle}</url>
-      <body>${escapeXml(page.content)}</body>
-      <editing_roles>teachers</editing_roles>
-      <notify_of_update>false</notify_of_update>
-      <published>${page.isPublished ? 'true' : 'false'}</published>
-      <front_page>false</front_page>
-      <workflow_state>${page.isPublished ? 'active' : 'unpublished'}</workflow_state>
-    </page>`;
-    }).join('')}
-  </pages>
-</wiki_content>`;
 };
 
 export const generateModuleStructure = (courseData: CourseData): string => {

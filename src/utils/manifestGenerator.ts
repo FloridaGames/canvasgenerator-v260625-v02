@@ -69,9 +69,6 @@ export const generateManifest = (courseData: CourseData): string => {
     <resource identifier="course_settings_resource" type="course_settings" href="course_settings/course_settings.xml">
       <file href="course_settings/course_settings.xml"/>
     </resource>
-    <resource identifier="wiki_content_resource" type="course_settings" href="course_settings/wiki_content.xml">
-      <file href="course_settings/wiki_content.xml"/>
-    </resource>
     <resource identifier="module_meta_resource" type="course_settings" href="course_settings/module_meta.xml">
       <file href="course_settings/module_meta.xml"/>
     </resource>
