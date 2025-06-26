@@ -1,4 +1,3 @@
-
 import { CourseData } from '@/components/CourseCreator';
 import { ResourceManager } from './ResourceManager';
 import { escapeXml } from '../xmlUtils';
@@ -47,6 +46,8 @@ export class ModuleGenerator {
         <identifierref>${resource.identifier}</identifierref>
         <published>${isPublished ? 'true' : 'false'}</published>
         <workflow_state>${isPublished ? 'active' : 'unpublished'}</workflow_state>
+        <canvas:points_possible xmlns:canvas="http://canvas.instructure.com/xsd/cccv1p0">0</canvas:points_possible>
+        <canvas:mastery_paths xmlns:canvas="http://canvas.instructure.com/xsd/cccv1p0">false</canvas:mastery_paths>
         
         <wiki_page>
           <div class="show-content user_content clearfix enhanced" data-resource-type="wiki_page.body" data-resource-id="${resourceId}" data-lti-page-content="true">

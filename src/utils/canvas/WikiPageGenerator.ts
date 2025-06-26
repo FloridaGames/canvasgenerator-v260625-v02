@@ -1,19 +1,26 @@
 import JSZip from 'jszip';
 import { CourseData, WikiPage } from '@/components/CourseCreator';
 import { ResourceManager } from './ResourceManager';
-import { generateCanvasPageHTML } from '../canvasPageGenerator';
+import { CanvasLinkMigrator, migrateCanvasContent } from './CanvasLinkMigrator';
 import { sanitizeFileName } from '../xmlUtils';
 
 export class WikiPageGenerator {
   private courseData: CourseData;
   private resourceManager: ResourceManager;
+  private linkMigrator: CanvasLinkMigrator;
 
   constructor(courseData: CourseData, resourceManager: ResourceManager) {
     this.courseData = courseData;
     this.resourceManager = resourceManager;
+    this.linkMigrator = new CanvasLinkMigrator({
+      course_id: courseData.code || 'COURSE_ID',
+      flavor: 'canvas'
+    });
   }
 
   async generate(zip: JSZip): Promise<void> {
+    console.log('Generating Canvas wiki pages...');
+    
     // Generate front page
     await this.generateFrontPage(zip);
     
@@ -28,14 +35,15 @@ export class WikiPageGenerator {
     const frontPageResource = this.resourceManager.getResource('front_page');
     if (!frontPageResource) return;
 
-    const frontPageHtml = this.generateWikiPageHTML({
+    const frontPageWikiPage: WikiPage = {
       id: 'front_page',
       title: this.courseData.frontPage.title,
       content: this.courseData.frontPage.content,
       order: 0,
       isPublished: true
-    }, frontPageResource.identifier);
-    
+    };
+
+    const frontPageHtml = this.generateWikiPageHTML(frontPageWikiPage, frontPageResource.identifier);
     zip.file(frontPageResource.href, frontPageHtml);
   }
 
@@ -68,6 +76,17 @@ export class WikiPageGenerator {
   }
 
   private generateWikiPageHTML(page: WikiPage, identifier: string): string {
+    // Migrate content using Canvas link migrator
+    const migrationResult = migrateCanvasContent(page.content, {
+      course_id: this.courseData.code || 'COURSE_ID',
+      flavor: 'canvas'
+    });
+
+    // Log any migration issues
+    if (migrationResult.issues.length > 0) {
+      console.log(`Migration issues for page "${page.title}":`, migrationResult.issues);
+    }
+
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -80,7 +99,7 @@ export class WikiPageGenerator {
 </head>
 <body>
 <div class="show-content user_content clearfix enhanced">
-${this.cleanHTMLContent(page.content)}
+${migrationResult.html}
 </div>
 </body>
 </html>`;
@@ -121,24 +140,6 @@ ${this.cleanHTMLContent(page.content)}
     }
     const hexHash = Math.abs(hash).toString(16).padEnd(32, '0').substring(0, 32);
     return `g${hexHash}`;
-  }
-
-  private cleanHTMLContent(content: string): string {
-    if (!content) return '<p>No content available</p>';
-    
-    let cleanContent = content
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-      
-    cleanContent = cleanContent
-      .replace(/<div[^>]*style="[^"]*"[^>]*>/gi, '<div>')
-      .replace(/style\s*=\s*"[^"]*"/gi, '');
-      
-    if (!cleanContent.includes('<p') && !cleanContent.includes('<h') && !cleanContent.includes('<div')) {
-      cleanContent = `<p>${cleanContent}</p>`;
-    }
-    
-    return cleanContent;
   }
 
   private escapeHtml(text: string): string {
