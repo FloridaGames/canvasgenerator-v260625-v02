@@ -1,4 +1,3 @@
-
 import JSZip from 'jszip';
 import { CourseData, WikiPage } from '@/components/CourseCreator';
 import { ResourceManager } from './ResourceManager';
@@ -21,7 +20,7 @@ export class WikiPageGenerator {
     // Generate wiki pages
     await this.generateWikiPages(zip);
     
-    // Generate document pages
+    // Generate document pages as WikiPages
     await this.generateDocumentPages(zip);
   }
 
@@ -29,11 +28,13 @@ export class WikiPageGenerator {
     const frontPageResource = this.resourceManager.getResource('front_page');
     if (!frontPageResource) return;
 
-    const frontPageHtml = generateCanvasPageHTML(
-      this.courseData.frontPage.title,
-      this.courseData.frontPage.content,
-      frontPageResource.identifier
-    );
+    const frontPageHtml = this.generateWikiPageHTML({
+      id: 'front_page',
+      title: this.courseData.frontPage.title,
+      content: this.courseData.frontPage.content,
+      order: 0,
+      isPublished: true
+    }, frontPageResource.identifier);
     
     zip.file(frontPageResource.href, frontPageHtml);
   }
@@ -59,7 +60,7 @@ export class WikiPageGenerator {
       );
       
       if (resource) {
-        const documentPage = this.createDocumentPage(document, title);
+        const documentPage = this.createDocumentWikiPage(document, title);
         const pageHtml = this.generateWikiPageHTML(documentPage, resource.identifier);
         zip.file(resource.href, pageHtml);
       }
@@ -67,21 +68,25 @@ export class WikiPageGenerator {
   }
 
   private generateWikiPageHTML(page: WikiPage, identifier: string): string {
-    return `<html>
+    return `<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <title>${this.escapeHtml(page.title)}</title>
 <meta name="identifier" content="${identifier}"/>
 <meta name="editing_roles" content="teachers"/>
 <meta name="workflow_state" content="${page.isPublished ? 'active' : 'unpublished'}"/>
+<meta name="wiki_page_menu_tools" content=""/>
 </head>
 <body>
+<div class="show-content user_content clearfix enhanced">
 ${this.cleanHTMLContent(page.content)}
+</div>
 </body>
 </html>`;
   }
 
-  private createDocumentPage(document: any, title: string): WikiPage {
+  private createDocumentWikiPage(document: any, title: string): WikiPage {
     return {
       id: `doc_${document.id}`,
       title: title,
@@ -93,14 +98,15 @@ ${this.cleanHTMLContent(page.content)}
 
   private generateDocumentPageContent(document: any): string {
     return `<div class="document-content">
-  <h2>Document: ${document.name}</h2>
-  <p>This page was created from an uploaded document.</p>
+  <h2>Document: ${this.escapeHtml(document.name)}</h2>
+  <p>This page was created from an uploaded document and is now a wiki page in your course.</p>
   <div class="document-info">
     <p><strong>File Type:</strong> ${document.name.split('.').pop()?.toUpperCase() || 'Unknown'}</p>
     <p><strong>Size:</strong> ${this.formatFileSize(document.file?.size || 0)}</p>
   </div>
   <div class="document-actions">
-    <p>You can edit this content or add additional information as needed.</p>
+    <p>You can edit this content directly in Canvas or add additional information as needed.</p>
+    <p><em>Note: This content is stored as a wiki page, not as a file attachment.</em></p>
   </div>
 </div>`;
   }

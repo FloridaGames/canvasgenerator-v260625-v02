@@ -34,7 +34,10 @@ export class ResourceManager {
   generateResourceXml(resource: Resource): string {
     const dependencyFiles = resource.dependencies?.map(dep => `<file href="${dep}"/>`).join('\n    ') || '';
     
-    return `  <resource identifier="${resource.identifier}" type="webcontent" href="${resource.href}">
+    // For WikiPages, use imscc_xmlv1p1/learning-application-resource instead of webcontent
+    const resourceType = resource.type === 'wiki_page' ? 'imscc_xmlv1p1/learning-application-resource' : 'webcontent';
+    
+    return `  <resource identifier="${resource.identifier}" type="${resourceType}" href="${resource.href}">
     <file href="${resource.href}"/>
     ${dependencyFiles}
   </resource>`;
