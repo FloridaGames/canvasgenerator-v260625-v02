@@ -28,6 +28,18 @@ export const generateCourseSettings = (courseData: CourseData): string => {
 export const generateWikiMetadata = (courseData: CourseData): string => {
   const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
   
+  // Combine regular pages with document-based pages
+  const allPages = [
+    ...courseData.pages,
+    ...courseData.documents.map(doc => ({
+      id: `doc_${doc.id}`,
+      title: doc.name.replace(/\.[^/.]+$/, ''),
+      content: generateDocumentPageContent(doc),
+      order: courseData.pages.length + 1,
+      isPublished: true
+    }))
+  ];
+  
   return `<?xml version="1.0" encoding="UTF-8"?>
 <wiki_content xmlns="http://canvas.instructure.com/xsd/cccv1p0"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -44,7 +56,7 @@ export const generateWikiMetadata = (courseData: CourseData): string => {
       <front_page>true</front_page>
       <workflow_state>active</workflow_state>
     </page>
-    ${courseData.pages.map(page => {
+    ${allPages.map(page => {
       const sanitizedTitle = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       const identifier = generateCanvasIdentifier(page.id, page.title);
       return `
@@ -64,6 +76,18 @@ export const generateWikiMetadata = (courseData: CourseData): string => {
 };
 
 export const generateModuleStructure = (courseData: CourseData): string => {
+  // Combine regular pages with document-based pages
+  const allPages = [
+    ...courseData.pages,
+    ...courseData.documents.map(doc => ({
+      id: `doc_${doc.id}`,
+      title: doc.name.replace(/\.[^/.]+$/, ''),
+      content: generateDocumentPageContent(doc),
+      order: courseData.pages.length + 1,
+      isPublished: true
+    }))
+  ];
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <modules xmlns="http://canvas.instructure.com/xsd/cccv1p0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -77,9 +101,9 @@ export const generateModuleStructure = (courseData: CourseData): string => {
     <workflow_state>active</workflow_state>
     
     <items>
-      ${courseData.pages.map((page, index) => {
+      ${allPages.map((page, index) => {
         const identifier = generateCanvasIdentifier(page.id, page.title);
-        const resourceId = Math.floor(Math.random() * 1000000) + 100000; // Generate a random resource ID
+        const resourceId = Math.floor(Math.random() * 1000000) + 100000;
         
         return `
       <item identifier="module_item_${identifier}">
@@ -103,4 +127,26 @@ export const generateModuleStructure = (courseData: CourseData): string => {
     </items>
   </module>
 </modules>`;
+};
+
+const generateDocumentPageContent = (document: any): string => {
+  return `<div class="document-content">
+  <h2>Document: ${document.name}</h2>
+  <p>This page was created from an uploaded document.</p>
+  <div class="document-info">
+    <p><strong>File Type:</strong> ${document.name.split('.').pop()?.toUpperCase() || 'Unknown'}</p>
+    <p><strong>Size:</strong> ${formatFileSize(document.file?.size || 0)}</p>
+  </div>
+  <div class="document-actions">
+    <p>You can edit this content or add additional information as needed.</p>
+  </div>
+</div>`;
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };

@@ -6,6 +6,18 @@ import { escapeXml, sanitizeFileName } from './xmlUtils';
 export const generateManifest = (courseData: CourseData): string => {
   const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
   
+  // Combine regular pages with document-based pages for manifest
+  const allPages = [
+    ...courseData.pages,
+    ...courseData.documents.map(doc => ({
+      id: `doc_${doc.id}`,
+      title: doc.name.replace(/\.[^/.]+$/, ''),
+      content: '', // Content will be generated elsewhere
+      order: courseData.pages.length + 1,
+      isPublished: true
+    }))
+  ];
+  
   return `<?xml version="1.0" encoding="UTF-8"?>
 <manifest identifier="course_export_${Date.now()}" 
           xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1"
@@ -38,7 +50,7 @@ export const generateManifest = (courseData: CourseData): string => {
       </item>
       <item identifier="pages_module" structure="rooted-hierarchy">
         <title>Wiki Pages</title>
-        ${courseData.pages.map((page) => {
+        ${allPages.map((page) => {
           const identifier = generateCanvasIdentifier(page.id, page.title);
           const sanitizedTitle = sanitizeFileName(page.title);
           return `
@@ -66,7 +78,7 @@ export const generateManifest = (courseData: CourseData): string => {
     <resource identifier="${frontPageIdentifier}" type="webcontent" href="wiki_content/front-page.html">
       <file href="wiki_content/front-page.html"/>
     </resource>
-    ${courseData.pages.map((page) => {
+    ${allPages.map((page) => {
       const identifier = generateCanvasIdentifier(page.id, page.title);
       const sanitizedTitle = sanitizeFileName(page.title);
       return `
