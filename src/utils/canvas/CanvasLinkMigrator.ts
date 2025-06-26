@@ -1,4 +1,3 @@
-
 import { HTMLCleaner } from './HTMLCleaner';
 import { CanvasFormatter } from './CanvasFormatter';
 import { LinkMigrator, LinkMigrationOptions } from './LinkMigrator';
@@ -9,7 +8,7 @@ export interface MigrationResult {
   migrated_links: number;
 }
 
-export { LinkMigrationOptions };
+export type { LinkMigrationOptions };
 
 export class CanvasLinkMigrator {
   private options: LinkMigrationOptions;
