@@ -1,65 +1,17 @@
-import JSZip from 'jszip';
 import { CourseData } from '@/components/CourseCreator';
-import { generateCanvasWikiPageHTML, generateCanvasIdentifier } from './wikiPageGenerator';
-import { generateManifest } from './manifestGenerator';
-import { generateCourseSettings, generateModuleStructure } from './courseSettingsGenerator';
-import { generateCanvasPageHTML } from './canvasPageGenerator';
-import { sanitizeFileName } from './xmlUtils';
+import { CartridgeCreator } from './canvas/CartridgeCreator';
 
 export const generateIMSCC = async (courseData: CourseData): Promise<Blob> => {
-  const zip = new JSZip();
+  console.log('Starting IMSCC generation with canvas_cc structure...');
   
-  // Generate manifest file
-  const manifest = generateManifest(courseData);
-  zip.file('imsmanifest.xml', manifest);
+  const cartridgeCreator = new CartridgeCreator(courseData);
+  const zipBlob = await cartridgeCreator.create();
   
-  // Generate course settings
-  const courseSettings = generateCourseSettings(courseData);
-  zip.file('course_settings/course_settings.xml', courseSettings);
-  
-  // Generate front page HTML with proper identifier
-  const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
-  const frontPageHtml = generateCanvasPageHTML(courseData.frontPage.title, courseData.frontPage.content, frontPageIdentifier);
-  zip.file('wiki_content/front-page.html', frontPageHtml);
-  
-  // Generate individual wiki pages HTML - all pages go into wiki_content folder inside the IMSCC
-  courseData.pages.forEach((page, index) => {
-    const sanitizedTitle = sanitizeFileName(page.title);
-    const expectedFilename = `${sanitizedTitle}.html`;
-    
-    // Generate HTML content for each page and place it in wiki_content folder
-    const pageHtml = generateCanvasWikiPageHTML(page);
-    zip.file(`wiki_content/${expectedFilename}`, pageHtml);
-  });
-  
-  // Generate HTML files for uploaded documents as pages
-  courseData.documents.forEach((document, index) => {
-    const sanitizedTitle = sanitizeFileName(document.name.replace(/\.[^/.]+$/, ''));
-    const expectedFilename = `${sanitizedTitle}.html`;
-    
-    // Create a wiki page object for the document
-    const documentPage = {
-      id: `doc_${document.id}`,
-      title: document.name.replace(/\.[^/.]+$/, ''),
-      content: generateDocumentPageContent(document),
-      order: courseData.pages.length + index + 1,
-      isPublished: true
-    };
-    
-    const pageHtml = generateCanvasWikiPageHTML(documentPage);
-    zip.file(`wiki_content/${expectedFilename}.html`, pageHtml);
-  });
-  
-  // Generate module structure
-  const moduleContent = generateModuleStructure(courseData);
-  zip.file('course_settings/module_meta.xml', moduleContent);
-  
-  // Create the actual ZIP file
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
-  
+  console.log('IMSCC generation completed successfully');
   return zipBlob;
 };
 
+// Keep backward compatibility helper functions
 const generateDocumentPageContent = (document: any): string => {
   return `<div class="document-content">
   <h2>Document: ${document.name}</h2>
