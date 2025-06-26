@@ -1,7 +1,7 @@
 
 import { CourseData } from '@/components/CourseCreator';
 import { generateCanvasIdentifier } from './wikiPageGenerator';
-import { escapeXml } from './xmlUtils';
+import { escapeXml, sanitizeFileName } from './xmlUtils';
 
 export const generateManifest = (courseData: CourseData): string => {
   const frontPageIdentifier = 'g' + 'frontpage'.padEnd(31, '0') + '1';
@@ -40,10 +40,13 @@ export const generateManifest = (courseData: CourseData): string => {
         <title>Wiki Pages</title>
         ${courseData.pages.map((page) => {
           const identifier = generateCanvasIdentifier(page.id, page.title);
+          const sanitizedTitle = sanitizeFileName(page.title);
           return `
-        <item identifier="wiki_item_${identifier}">
+        <item identifier="${identifier}">
           <title>${escapeXml(page.title)}</title>
-          <identifierref>${identifier}</identifierref>
+          <item identifier="${identifier}_item" identifierref="${identifier}">
+            <title>${sanitizedTitle}</title>
+          </item>
         </item>`;
         }).join('')}
       </item>
@@ -65,7 +68,7 @@ export const generateManifest = (courseData: CourseData): string => {
     </resource>
     ${courseData.pages.map((page) => {
       const identifier = generateCanvasIdentifier(page.id, page.title);
-      const sanitizedTitle = page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const sanitizedTitle = sanitizeFileName(page.title);
       return `
     <resource identifier="${identifier}" type="webcontent" href="wiki_content/${sanitizedTitle}.html">
       <file href="wiki_content/${sanitizedTitle}.html"/>
